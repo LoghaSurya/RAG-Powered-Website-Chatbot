@@ -1,150 +1,38 @@
-# Byte-compiled / optimized / DLL files
+# Python
 __pycache__/
 *.py[cod]
-*$py.class
-
-# C extensions
-*.so
-
-# Distribution / packaging
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-share/python-wheels/
 *.egg-info/
-.installed.cfg
+dist/
+build/
 *.egg
+.eggs/
 
-# PyInstaller
-#  Usually these files are written by a python script, etc.
-*.manifest
-*.spec
-
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
-
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.nox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.py,cover
-.hypothesis/
-.pytest_cache/
-cover/
-
-# Translations
-*.mo
-*.pot
-
-# Django stuff:
-*.log
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
-
-# Sphinx documentation
-doc/_build/
-
-# PyBuilder
-.pybuilder/
-target/
-
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# IPython
-profile_default/
-ipython_config.py
-
-# pyenv
-#   For a library or app, you might want to share your .python-version if you're
-#   using pyenv and micro-envs to manage your working platform, or not.
-# .python-version
-
-# pipenv
-#   According to pypa/pipenv#1402, Pipfile.lock prevents deterministic
-#   builds in top-level apps and development environments.
-#   We should keep the Pipfile.lock in version control for apps but not libraries.
-#Pipfile.lock
-
-# poetry
-#   Similar to Pipfile.lock, poetry.lock limits installing newer versions of dependencies and should be committed for apps but not libraries.
-#poetry.lock
-
-# pdm
-#   Similar to Pipfile.lock, pdm.lock limits installing newer versions of dependencies and should be committed for apps but not libraries.
-#pdm.lock
-
-# virtualenv
+# Virtual environments
 .venv/
 venv/
-ENV/
 env/
-system_env/
+ENV/
 
-# Spyder project settings
-.spyderproject
-.spyproject
-
-# Rope project settings
-.ropeproject
-
-# mkdocs documentation
-/site
-
-# mypy
-.mypy_cache/
-.dmypy.json
-dmypy.json
-
-# Pyre type checker
-.pyre/
-
-# pytype static type analyzer
-.pytype/
-
-# Cython debug symbols
-cython_debug/
-
-# Node modules
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Vector Database storage directories
-chroma_db/
-.chroma/
-lancedb/
-
-# Local env files
+# Environment variables
 .env
 .env.local
-.env.development.local
-.env.test.local
-.env.production.local
 
-# IDE configurations
+# Vector database storage
+chroma_db/
+.chroma/
+vector_store.json
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# Node / Frontend
+node_modules/
+dist/
+.DS_Store
+
+# IDE
 .vscode/
 .idea/
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+
+# Logs
+*.log
