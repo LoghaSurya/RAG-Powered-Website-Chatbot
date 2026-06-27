@@ -24,6 +24,21 @@ const LinkIcon = () => (
     <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
   </svg>
 )
+const SunIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+  </svg>
+)
+const MoonIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+  </svg>
+)
+const TrashIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>
+  </svg>
+)
 
 // ── Typing Indicator ────────────────────────────
 const TypingIndicator = () => (
@@ -38,9 +53,14 @@ const TypingIndicator = () => (
 
 // ── Main App ────────────────────────────────────
 export default function App() {
-  const [url, setUrl]           = useState('')
-  const [maxPages, setMaxPages] = useState(15)
-  const [maxDepth, setMaxDepth] = useState(2)
+  const [url, setUrl]             = useState('')
+  const [maxPages, setMaxPages]   = useState(15)
+  const [maxDepth, setMaxDepth]   = useState(2)
+  const [useBrowser, setUseBrowser] = useState(false)
+  const [appendMode, setAppendMode] = useState(false)
+  const [theme, setTheme]         = useState(() => localStorage.getItem('theme') || 'dark')
+  const [domains, setDomains]     = useState([])
+  const [selectedDomains, setSelectedDomains] = useState([])
   const [crawlState, setCrawlState] = useState({ status: 'idle', pages_found: 0, chunks: 0, pages: [], error: null, url: null })
   const [messages, setMessages] = useState([])
   const [input, setInput]       = useState('')
@@ -49,6 +69,24 @@ export default function App() {
   const messagesEndRef           = useRef(null)
   const inputRef                 = useRef(null)
   const pollRef                  = useRef(null)
+
+  const fetchDomains = async () => {
+    try {
+      const res = await fetch(`${API}/api/domains`)
+      if (res.ok) {
+        const data = await res.json()
+        setDomains(data)
+      }
+    } catch (e) {
+      console.error('Failed to fetch domains', e)
+    }
+  }
+
+  // Toggle Theme on data-theme attribute
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+    localStorage.setItem('theme', theme)
+  }, [theme])
 
   // Auto-scroll chat to bottom
   useEffect(() => {
@@ -66,6 +104,7 @@ export default function App() {
           if (data.status === 'ready' || data.status === 'error' || data.status === 'idle') {
             setPolling(false)
             clearInterval(pollRef.current)
+            fetchDomains()
           }
         } catch {
           setPolling(false)
@@ -80,9 +119,22 @@ export default function App() {
   useEffect(() => {
     fetch(`${API}/api/status`)
       .then(r => r.json())
-      .then(d => setCrawlState(d))
+      .then(d => {
+        setCrawlState(d)
+        if (d.status === 'ready') {
+          fetchDomains()
+        }
+      })
       .catch(() => {})
+    fetchDomains()
   }, [])
+
+  // Automatically refocus the chat input when it becomes active or loading completes
+  useEffect(() => {
+    if (!loading && crawlState.status === 'ready') {
+      inputRef.current?.focus()
+    }
+  }, [loading, crawlState.status])
 
   const startCrawl = async () => {
     if (!url.trim()) return
@@ -90,7 +142,13 @@ export default function App() {
       await fetch(`${API}/api/crawl`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: url.trim(), max_pages: Number(maxPages), max_depth: Number(maxDepth) })
+        body: JSON.stringify({
+          url: url.trim(),
+          max_pages: Number(maxPages),
+          max_depth: Number(maxDepth),
+          use_browser: useBrowser,
+          append_mode: appendMode
+        })
       })
       setCrawlState(s => ({ ...s, status: 'crawling' }))
       setMessages([])
@@ -105,8 +163,42 @@ export default function App() {
     setCrawlState({ status: 'idle', pages_found: 0, chunks: 0, pages: [], error: null, url: null })
     setMessages([])
     setUrl('')
+    setDomains([])
+    setSelectedDomains([])
     setPolling(false)
     clearInterval(pollRef.current)
+  }
+
+  const deleteDomain = async (domainName) => {
+    if (!window.confirm(`Are you sure you want to delete ${domainName} from the database?`)) return
+    try {
+      const res = await fetch(`${API}/api/domains/${domainName}`, { method: 'DELETE' })
+      if (res.ok) {
+        fetchDomains()
+        setSelectedDomains(prev => prev.filter(d => d !== domainName))
+        // Query status to get updated chunks count
+        const statusRes = await fetch(`${API}/api/status`)
+        if (statusRes.ok) {
+          const statusData = await statusRes.json()
+          setCrawlState(statusData)
+        }
+      } else {
+        const data = await res.json()
+        alert(`Failed to delete domain: ${data.detail || 'Unknown error'}`)
+      }
+    } catch (e) {
+      alert('Error deleting website domain.')
+    }
+  }
+
+  const toggleDomainSelection = (domainName) => {
+    setSelectedDomains(prev => {
+      if (prev.includes(domainName)) {
+        return prev.filter(d => d !== domainName)
+      } else {
+        return [...prev, domainName]
+      }
+    })
   }
 
   const sendMessage = async () => {
@@ -121,7 +213,10 @@ export default function App() {
       const res = await fetch(`${API}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: q })
+        body: JSON.stringify({
+          question: q,
+          domains: selectedDomains.length > 0 ? selectedDomains : null
+        })
       })
       const data = await res.json()
       if (!res.ok) {
@@ -133,7 +228,9 @@ export default function App() {
       setMessages(m => [...m, { role: 'bot', text: 'Could not reach the backend. Make sure the server is running.', sources: [], time: now(), error: true }])
     } finally {
       setLoading(false)
-      inputRef.current?.focus()
+      setTimeout(() => {
+        inputRef.current?.focus()
+      }, 50)
     }
   }
 
@@ -165,10 +262,15 @@ export default function App() {
             <div className="header-subtitle">Powered by Google Gemini · ChromaDB</div>
           </div>
         </div>
-        <div className="status-pill">
-          <div className={`status-dot ${crawlState.status === 'ready' ? 'ready' : isCrawling ? 'active' : crawlState.status === 'error' ? 'error' : 'idle'}`}/>
-          {statusLabel}
-          {crawlState.url && <span style={{ color: 'var(--text-muted)', fontSize: '0.68rem' }}>· {new URL(crawlState.url).hostname}</span>}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <button className="theme-btn" onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} title="Toggle Light/Dark Theme">
+            {theme === 'dark' ? <SunIcon/> : <MoonIcon/>}
+          </button>
+          <div className="status-pill">
+            <div className={`status-dot ${crawlState.status === 'ready' ? 'ready' : isCrawling ? 'active' : crawlState.status === 'error' ? 'error' : 'idle'}`}/>
+            {statusLabel}
+            {crawlState.url && <span style={{ color: 'var(--text-muted)', fontSize: '0.68rem' }}>· {new URL(crawlState.url).hostname}</span>}
+          </div>
         </div>
       </header>
 
@@ -192,20 +294,90 @@ export default function App() {
             <div className="url-input-row">
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 5 }}>Max Pages</div>
-                <input className="input-sm" type="number" min="1" max="100" value={maxPages}
+                <input className="input-sm" type="number" min="1" max="50" value={maxPages}
                   onChange={e => setMaxPages(e.target.value)} disabled={isCrawling}/>
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 5 }}>Depth</div>
-                <input className="input-sm" type="number" min="1" max="5" value={maxDepth}
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 5 }}>
+                  Depth {Number(maxDepth) > 2 && <span title="Higher depth crawls exponentially more pages and can crash on large sites" style={{ color: '#f59e0b', cursor: 'help' }}>⚠</span>}
+                </div>
+                <input className="input-sm" type="number" min="1" max="4" value={maxDepth}
                   onChange={e => setMaxDepth(e.target.value)} disabled={isCrawling}/>
               </div>
             </div>
+
+            {/* Browser Mode Toggle */}
+            <div className="browser-toggle-row">
+              <div className="browser-toggle-info">
+                <div className="browser-toggle-label">
+                  🌐 Browser Mode
+                  {useBrowser && <span className="browser-badge">ON</span>}
+                </div>
+                <div className="browser-toggle-desc">
+                  {useBrowser
+                    ? 'Using headless Chrome — bypasses bot protection (slower)'
+                    : 'Use for sites like TripAdvisor that block normal crawlers'}
+                </div>
+              </div>
+              <label className="toggle-switch" title="Enable for bot-protected sites like TripAdvisor, LinkedIn">
+                <input
+                  type="checkbox"
+                  checked={useBrowser}
+                  onChange={e => setUseBrowser(e.target.checked)}
+                  disabled={isCrawling}
+                />
+                <span className="toggle-slider"/>
+              </label>
+            </div>
+
+            {/* Append Mode Option */}
+            <div className="append-row">
+              <input
+                type="checkbox"
+                id="append-checkbox"
+                className="app-checkbox"
+                checked={appendMode}
+                onChange={e => setAppendMode(e.target.checked)}
+                disabled={isCrawling}
+              />
+              <label htmlFor="append-checkbox" className="checkbox-label">
+                Add to existing knowledge base
+              </label>
+            </div>
+
             <button className="btn btn-primary btn-full" onClick={startCrawl} disabled={isCrawling || !url.trim()} id="crawl-btn">
               {isCrawling ? '⏳ Crawling…' : '🚀 Start Crawling'}
             </button>
           </div>
         </div>
+
+        {/* Ingested Sites Panel */}
+        {domains.length > 0 && (
+          <div className="card">
+            <div className="card-title">📚 Ingested Sites</div>
+            <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+              {domains.map((d, i) => (
+                <div key={i} className="website-item">
+                  <div className="website-info">
+                    <div className="website-name" title={d.domain}>{d.domain}</div>
+                    <div className="website-meta">
+                      <span>📄 {d.pages} pages</span>
+                      <span>🧩 {d.chunks} chunks</span>
+                    </div>
+                  </div>
+                  <button
+                    className="website-del-btn"
+                    onClick={() => deleteDomain(d.domain)}
+                    title={`Delete ${d.domain} from DB`}
+                    disabled={isCrawling}
+                  >
+                    <TrashIcon/>
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Progress / Stats */}
         {(isCrawling || isReady || crawlState.status === 'error') && (
@@ -271,6 +443,28 @@ export default function App() {
 
       {/* ── Chat Area ── */}
       <main className="chat-area">
+        {/* Chat Context Selector bar */}
+        {isReady && domains.length > 0 && (
+          <div className="chat-context-bar">
+            <span className="context-label">Chat focus:</span>
+            <button
+              className={`context-pill ${selectedDomains.length === 0 ? 'selected' : ''}`}
+              onClick={() => setSelectedDomains([])}
+            >
+              🌐 All Sites
+            </button>
+            {domains.map((d, i) => (
+              <button
+                key={i}
+                className={`context-pill ${selectedDomains.includes(d.domain) ? 'selected' : ''}`}
+                onClick={() => toggleDomainSelection(d.domain)}
+              >
+                📄 {d.domain}
+              </button>
+            ))}
+          </div>
+        )}
+
         <div className="chat-messages">
           {messages.length === 0 && !loading ? (
             <div className="empty-state">

@@ -6,13 +6,13 @@ import os
 # ──────────────────────────────────────────────
 
 # Gemini API
-GEMINI_API_KEY     = os.environ.get("GEMINI_API_KEY", "")
-EMBEDDING_MODEL    = "text-embedding-004"
-GENERATION_MODEL   = "gemini-1.5-flash"
+GOOGLE_API_KEY     = os.environ.get("GOOGLE_API_KEY", "")
+EMBEDDING_MODEL    = "gemini-embedding-001"
+GENERATION_MODEL   = "gemini-2.5-flash"
 
 # ChromaDB
 CHROMA_DB_PATH     = "./chroma_db"          # Local folder where vectors are stored
-CHROMA_COLLECTION  = "website_content"      # Name of the collection inside ChromaDB
+CHROMA_COLLECTION  = "website_content_local"      # Name of the collection inside ChromaDB
 
 # Chunking
 CHUNK_SIZE         = 800                    # Characters per chunk
@@ -21,6 +21,6 @@ CHUNK_OVERLAP      = 150                    # Overlap between consecutive chunks
 # Retrieval
 TOP_K_RESULTS      = 5                      # Number of chunks to retrieve per query
 
-# Crawler defaults
-DEFAULT_MAX_PAGES  = 20
+# Crawler defaults (keep low to avoid RAM exhaustion on large sites)
+DEFAULT_MAX_PAGES  = 15
 DEFAULT_MAX_DEPTH  = 2
