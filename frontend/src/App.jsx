@@ -39,6 +39,12 @@ const TrashIcon = () => (
     <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>
   </svg>
 )
+const CompassIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10"/>
+    <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 8.88 9.88 16.24 7.76"/>
+  </svg>
+)
 
 // ── Typing Indicator ────────────────────────────
 const TypingIndicator = () => (
@@ -256,9 +262,9 @@ export default function App() {
       {/* ── Header ── */}
       <header className="header">
         <div className="header-brand">
-          <div className="header-logo">🤖</div>
+          <div className="header-logo"><CompassIcon/></div>
           <div>
-            <div className="header-title">RAG Website Chatbot</div>
+            <div className="header-title">Page Pilot</div>
             <div className="header-subtitle">Powered by Google Gemini · ChromaDB</div>
           </div>
         </div>
@@ -468,8 +474,8 @@ export default function App() {
         <div className="chat-messages">
           {messages.length === 0 && !loading ? (
             <div className="empty-state">
-              <div className="empty-icon">💬</div>
-              <div className="empty-title">RAG-Powered Website Chatbot</div>
+              <div className="empty-icon"><CompassIcon/></div>
+              <div className="empty-title">Page Pilot</div>
               <div className="empty-desc">
                 Enter any website URL on the left, click <strong>Start Crawling</strong>, then ask questions about the content below.
               </div>

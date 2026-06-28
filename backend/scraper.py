@@ -1,7 +1,6 @@
 import os
 import sys
 import asyncio
-import random
 from collections import deque
 from urllib.parse import urljoin, urlparse
 from typing import Callable, List, Optional, Set, Dict, Tuple
@@ -17,10 +16,10 @@ load_dotenv()
 
 DEFAULT_MAX_PAGES  = 15    # Maximum pages to crawl
 DEFAULT_MAX_DEPTH  = 2     # How many link-levels deep to follow
-REQUEST_TIMEOUT    = 10.0  # Seconds before giving up on a page (HTTP mode)
-CONCURRENT_FETCHES = 5     # Max simultaneous connections (HTTP mode)
+REQUEST_TIMEOUT    = 6.0   # Seconds before giving up on a page (HTTP mode)
+CONCURRENT_FETCHES = 10    # Max simultaneous connections (HTTP mode)
 PW_CONCURRENT      = 2     # Max simultaneous browser tabs (Playwright mode — RAM heavy!)
-PW_PAGE_TIMEOUT    = 20_000  # Playwright navigation timeout in ms
+PW_PAGE_TIMEOUT    = 12_000  # Playwright navigation timeout in ms
 
 # Realistic browser headers for HTTP mode
 HEADERS = {
@@ -182,7 +181,7 @@ class _BFSRunner:
 
         while queue and not self._stop:
             batch: List[Tuple[str, int]] = []
-            while queue and len(batch) < self.concurrency * 2:
+            while queue and len(batch) < self.concurrency * 4:
                 batch.append(queue.popleft())
 
             child_link_lists = await asyncio.gather(*[
@@ -304,21 +303,16 @@ class PlaywrightCrawler(_BFSRunner):
             try:
                 page = await self._context.new_page()
 
-                # Human-like: random small delay before navigating
-                await asyncio.sleep(random.uniform(0.5, 1.5))
-
                 await page.goto(
                     url,
                     wait_until="domcontentloaded",
                     timeout=PW_PAGE_TIMEOUT,
                 )
 
-                # Wait a moment for lazy-loaded content
-                await asyncio.sleep(random.uniform(0.8, 1.5))
-
-                # Scroll slightly to trigger lazy rendering
+                # Brief wait for lazy-loaded content, then scroll to trigger rendering
+                await asyncio.sleep(0.4)
                 await page.evaluate("window.scrollBy(0, window.innerHeight * 0.5)")
-                await asyncio.sleep(0.5)
+                await asyncio.sleep(0.2)
 
                 html = await page.content()
                 return html
